@@ -1,0 +1,42 @@
+# Django media files
+media/
+
+# Django static files
+static/
+staticfiles/
+
+# SQLite database
+*.sqlite3
+
+# Python virtual environment
+chatenv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+sdist/
+var/
+*.manifest
+*.spec
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
