@@ -4,7 +4,7 @@
 <div class="block max-w-2xl mx-auto my-10 px-6">
     {% if chat_group.groupchat_name %}
     <div class="flex justify-between">
-        <h2>{{ chat_group.groupchat_name }}</h2>
+        <h2 class="text-xl font-bold">{{ chat_group.groupchat_name }}</h2>
         {% if user == chat_group.admin %}
         <a href="{% url 'edit-chatroom' chat_group.group_name %}">
             <div class="p-2 bg-gray-200 hover:bg-blue-600 rounded-lg group">
@@ -14,15 +14,17 @@
             </div>
         </a>
         {% endif %}
+
     </div>
     {% endif %}
 
     <div id="chat_window" class="h-[45rem] flex flex-col bg-gray-800 rounded-2xl shadow-2xl relative p-1">
+        <!-- Chat header -->
         <div class="flex justify-center text-emerald-400 bg-gray-800 p-2 sticky top-0 z-10">
             {% if other_user %}
             <div id="online-icon" class="gray-dot absolute top-2 left-2"></div>
             <a href="{% url 'profile' other_user.username %}">
-                <div class="flex items-center gap-2 p-4 sticky top-0 z-10">
+                <div class="flex items-center gap-2 p-4">
                     <img class="w-10 h-10 rounded-full object-cover" src="{{ other_user.profile.avatar }}" />
                     <div>
                         <span class="font-bold text-white">{{ other_user.profile.name }}</span>
@@ -43,7 +45,9 @@
             </ul>
             {% else %}
             <div id="online-icon"></div>
-            <span id="online-count" class="pr-1"></span>online
+            <!-- Online count placeholder -->
+
+            <span id="online-count" class="pr-1">{{ online_count }}</span> online
             {% endif %}
         </div>
 
@@ -59,20 +63,19 @@
         <!-- Message form -->
         <div class="sticky bottom-0 z-10 p-2 bg-gray-800">
             <div class="flex flex-col gap-4 items-center rounded-xl px-2 py-2">
-               <form id="chat_message_form" class="w-full"
-      hx-post="{% url 'chatroom' chatroom_name %}"
-      hx-target="#chat_messages"
-      hx-swap="beforeend"
-      _="on htmx:afterOnLoad reset() me">
-    {% csrf_token %}
-    {{ form }}
-</form>
-
+                <form id="chat_message_form" class="w-full"
+                      hx-post="{% url 'chatroom' chatroom_name %}"
+                      hx-target="#chat_messages"
+                      hx-swap="beforeend"
+                      _="on htmx:afterOnLoad reset() me">
+                    {% csrf_token %}
+                    {{ form }}
+                </form>
 
                 <form id="chat_file_form" enctype="multipart/form-data" class="flex items-center w-full"
-                    hx-target="#chat_messages"
-                    hx-swap="beforeend"
-                    _="on htmx:beforeSend reset() me">
+                      hx-target="#chat_messages"
+                      hx-swap="beforeend"
+                      _="on htmx:beforeSend reset() me">
                     {% csrf_token %}
                     <input type="file" name="file" id="id_file" class="!bg-transparent text-gray-400">
                     <button type="submit" class="whitespace-nowrap !text-sm !py-3 !px-4 h-fit">Submit File</button>
@@ -108,6 +111,53 @@
             scrollToBottom(50);
         }
     });
+
+    // ------------------------------
+    // WebSocket client for chat + online count
+    // ------------------------------
+    (function() {
+        const roomName = "{{ chatroom_name }}";
+        const protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+        const wsUrl = protocol + window.location.host + "/ws/chat/" + roomName + "/";
+        const chatSocket = new WebSocket(wsUrl);
+
+        chatSocket.onopen = () => {
+            console.log("Chat websocket connected:", wsUrl);
+        };
+
+        chatSocket.onmessage = function(e) {
+            const html = e.data;
+
+            // If update contains online-count partial
+            if (html.includes('id="online-count"')) {
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+                const incoming = temp.querySelector('#online-count');
+                if (incoming) {
+                    const existing = document.getElementById('online-count');
+                    if (existing) {
+                        existing.outerHTML = incoming.outerHTML;
+                    }
+                }
+                return;
+            }
+
+            // Otherwise assume it's a chat message partial
+            const messages = document.getElementById('chat_messages');
+            if (messages) {
+                messages.insertAdjacentHTML('beforeend', html);
+                scrollToBottom(50);
+            }
+        };
+
+        chatSocket.onclose = function(e) {
+            console.log("Chat socket closed.", e);
+        };
+
+        chatSocket.onerror = function(err) {
+            console.error("WebSocket error:", err);
+        };
+    })();
 </script>
 
 <style>
