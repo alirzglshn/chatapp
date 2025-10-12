@@ -4,6 +4,8 @@ from allauth.account.utils import send_email_confirmation
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.contrib.auth.models import User
+from django.http import JsonResponse
+from django.templatetags.static import static
 from django.contrib.auth.views import redirect_to_login
 from django.contrib import messages
 from .forms import *
@@ -112,3 +114,5 @@ def profile_delete_view(request):
         return redirect('home')
     
     return render(request, 'a_users/profile_delete.html')
+
+
