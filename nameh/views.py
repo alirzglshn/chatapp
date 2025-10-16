@@ -161,6 +161,7 @@ def chatroom_leave_view(request, chatroom_name):
     if request.method == "POST":
         chat_group.members.remove(request.user)
         messages.success(request, 'You left the Chat')
-        return redirect('home')
+        return redirect('chat_view')
+
 
 

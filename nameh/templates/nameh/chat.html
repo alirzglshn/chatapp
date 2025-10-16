@@ -90,79 +90,60 @@
     </div>
 
     {% if chat_group.members.exists %}
-    <a href="{% url 'chatroom-leave' chat_group.group_name %}">
+    <div x-data="{ modal_open: false }" class="mt-4 flex justify-center">
+        <button
+                @click="modal_open = true"
+                class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+        >
+            Leave Chat
+        </button>
+
         {% include 'nameh/partials/modal_chat_leave.html' %}
-    </a>
+    </div>
     {% endif %}
+
+
 </div>
 {% endblock %}
 
 {% block javascript %}
+
 <script>
-    function scrollToBottom(time=0) {
-        setTimeout(function() {
-            const container = document.getElementById('chat_container');
-            if (container) {
-                container.scrollTop = container.scrollHeight;
-            }
-        }, time);
-    }
-    // Scroll on page load
-    scrollToBottom();
-
-    // Scroll after new HTMX swaps
-    document.body.addEventListener('htmx:afterSwap', (e) => {
-        if (e.target.id === "chat_messages") {
-            scrollToBottom(50);
-        }
-    });
-
-    // ------------------------------
-    // WebSocket client for chat + online count
-    // ------------------------------
     (function() {
         const roomName = "{{ chatroom_name }}";
         const protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
-        const wsUrl = protocol + window.location.host + "/ws/chat/" + roomName + "/";
-        const chatSocket = new WebSocket(wsUrl);
+        const host = window.location.host;
 
-        chatSocket.onopen = () => {
-            console.log("Chat websocket connected:", wsUrl);
-        };
-
-        chatSocket.onmessage = function(e) {
+        // --- CHAT SOCKET ---
+        const chatSocket = new WebSocket(`${protocol}${host}/ws/chat/${roomName}/`);
+        chatSocket.onopen = () => console.log("Chat socket connected:", roomName);
+        chatSocket.onmessage = (e) => {
             const html = e.data;
-
-            // If update contains online-count partial
             if (html.includes('id="online-count"')) {
                 const temp = document.createElement('div');
                 temp.innerHTML = html;
                 const incoming = temp.querySelector('#online-count');
-                if (incoming) {
-                    const existing = document.getElementById('online-count');
-                    if (existing) {
-                        existing.outerHTML = incoming.outerHTML;
-                    }
-                }
+                const existing = document.getElementById('online-count');
+                if (incoming && existing) existing.outerHTML = incoming.outerHTML;
                 return;
             }
-
-            // Otherwise assume it's a chat message partial
-            const messages = document.getElementById('chat_messages');
-            if (messages) {
-                messages.insertAdjacentHTML('beforeend', html);
-                scrollToBottom(50);
-            }
+            document.getElementById('chat_messages')?.insertAdjacentHTML('beforeend', html);
         };
 
-        chatSocket.onclose = function(e) {
-            console.log("Chat socket closed.", e);
-        };
-
-        chatSocket.onerror = function(err) {
-            console.error("WebSocket error:", err);
-        };
+        // --- GLOBAL ONLINE STATUS SOCKET ---
+        const onlineSocket = new WebSocket(`${protocol}${host}/ws/online-status/`);
+        onlineSocket.onopen = () => console.log("Connected to /ws/online-status/");
+        onlineSocket.onmessage = (e) => {
+    const html = e.data;
+    const container = document.getElementById('online-user-count');
+    if (container) {
+        container.outerHTML = html;  // replaces the old div with the new rendered one
+    }
+};
+        onlineSocket.onclose = () => console.log("Disconnected from /ws/online-status/");
     })();
+</script>
+
 </script>
 
 <style>
