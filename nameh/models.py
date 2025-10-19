@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 import shortuuid
+import os
+from PIL import Image
 
 class ChatGroup(models.Model):
     group_name = models.CharField(max_length=128, unique=True, blank=True , default=shortuuid.uuid)
@@ -24,8 +26,28 @@ class GroupMessage(models.Model):
     file = models.FileField(upload_to='files/', blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
 
+
+    @property
+    def filename(self):
+        if self.file:
+            return os.path.basename(self.file.name)
+        else :
+            return None
+
+
     def __str__(self):
-        return f'{self.author.username} : {self.body}'
+        if self.body:
+            return f'{self.author.username} : {self.body}'
+        elif self.file :
+            return f'{self.author.username} : {self.filename}'
+
 
     class Meta:
         ordering = ['-created']
+
+    @property
+    def is_image(self):
+        if self.filename.lower().endswith(('.jpg' , '.jpeg' , '.png' , '.gif' , '.svg' , '.webp')):
+            return True
+        else :
+            return False

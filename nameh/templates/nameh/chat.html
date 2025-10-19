@@ -111,63 +111,62 @@
 {% block javascript %}
 
 <script>
-    <script>
-(function() {
-    const roomName = "{{ chatroom_name }}";
-    const protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
-    const host = window.location.host;
 
-    // --- CHAT SOCKET ---
-    const chatSocket = new WebSocket(`${protocol}${host}/ws/chat/${roomName}/`);
-    chatSocket.onopen = () => console.log("Chat socket connected:", roomName);
-    chatSocket.onmessage = (e) => {
-        const html = e.data;
-        if (html.includes('id="online-count"')) {
-            const temp = document.createElement('div');
-            temp.innerHTML = html;
-            const incoming = temp.querySelector('#online-count');
-            const existing = document.getElementById('online-count');
-            if (incoming && existing) existing.outerHTML = incoming.outerHTML;
-            return;
-        }
-        document.getElementById('chat_messages')?.insertAdjacentHTML('beforeend', html);
-        scrollToBottom(200);  // ⬅ scroll down after receiving message
-    };
+    (function() {
+        const roomName = "{{ chatroom_name }}";
+        const protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+        const host = window.location.host;
 
-    // --- GLOBAL ONLINE STATUS SOCKET ---
-    const onlineSocket = new WebSocket(`${protocol}${host}/ws/online-status/`);
-    onlineSocket.onopen = () => console.log("Connected to /ws/online-status/");
-    onlineSocket.onmessage = (e) => {
-        const html = e.data;
-        const container = document.getElementById('online-user-count');
-        if (container) {
-            container.outerHTML = html;
-        }
-    };
-    onlineSocket.onclose = () => console.log("Disconnected from /ws/online-status/");
+        // --- CHAT SOCKET ---
+        const chatSocket = new WebSocket(`${protocol}${host}/ws/chat/${roomName}/`);
+        chatSocket.onopen = () => console.log("Chat socket connected:", roomName);
+        chatSocket.onmessage = (e) => {
+            const html = e.data;
+            if (html.includes('id="online-count"')) {
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+                const incoming = temp.querySelector('#online-count');
+                const existing = document.getElementById('online-count');
+                if (incoming && existing) existing.outerHTML = incoming.outerHTML;
+                return;
+            }
+            document.getElementById('chat_messages')?.insertAdjacentHTML('beforeend', html);
+            scrollToBottom(200);  // ⬅ scroll down after receiving message
+        };
 
-    // --- SCROLL HELPER ---
-    function scrollToBottom(time = 0) {
-        setTimeout(() => {
-            const container = document.getElementById('chat_container');
-            if (container) container.scrollTop = container.scrollHeight;
-        }, time);
-    }
+        // --- GLOBAL ONLINE STATUS SOCKET ---
+        const onlineSocket = new WebSocket(`${protocol}${host}/ws/online-status/`);
+        onlineSocket.onopen = () => console.log("Connected to /ws/online-status/");
+        onlineSocket.onmessage = (e) => {
+            const html = e.data;
+            const container = document.getElementById('online-user-count');
+            if (container) {
+                container.outerHTML = html;
+            }
+        };
+        onlineSocket.onclose = () => console.log("Disconnected from /ws/online-status/");
 
-    // --- FILE UPLOAD FORM ---
-    const fileForm = document.getElementById('chat_file_form');
-    if (fileForm) {
-        fileForm.addEventListener('htmx:afterRequest', () => {
-            // give Django a sec to render the image URL
+        // --- SCROLL HELPER ---
+        function scrollToBottom(time = 0) {
             setTimeout(() => {
-                location.reload();  // reload chat after upload
-            }, 800);
-        });
-    }
-})();
+                const container = document.getElementById('chat_container');
+                if (container) container.scrollTop = container.scrollHeight;
+            }, time);
+        }
+
+        // --- FILE UPLOAD FORM ---
+        const fileForm = document.getElementById('chat_file_form');
+        if (fileForm) {
+            fileForm.addEventListener('htmx:afterRequest', () => {
+                // give Django a sec to render the image URL
+                setTimeout(() => {
+                    location.reload();  // reload chat after upload
+                }, 800);
+            });
+        }
+    })();
 </script>
 
-</script>
 
 <style>
     @keyframes fadeInAndUp {

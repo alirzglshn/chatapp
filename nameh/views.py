@@ -8,6 +8,8 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from .forms import *
 from django.http import HttpResponse
+from django.template.loader import render_to_string
+from django.http import HttpResponse
 
 
 
@@ -183,4 +185,8 @@ def chat_file_upload(request, chatroom_name):
         async_to_sync(channel_layer.group_send)(
             chatroom_name, event
         )
-    return HttpResponse()
+        html = render_to_string(
+            "nameh/partials/chat_message_p.html",
+            {"message": message, "user": request.user}
+        )
+        return HttpResponse(html)
